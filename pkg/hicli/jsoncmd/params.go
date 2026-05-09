@@ -462,3 +462,9 @@ type OAuthPollDeviceCodeParams struct {
 	HomeserverURL string `json:"homeserver_url"`
 	oauth.PollDeviceCodeParams
 }
+
+type GetLiveKitCredentialsParams struct {
+	SFUURL   string    `json:"sfu_url"`
+	RoomID   id.RoomID `json:"room_id"`
+	DeviceID string    `json:"device_id"`
+}

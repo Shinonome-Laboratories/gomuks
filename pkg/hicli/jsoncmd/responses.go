@@ -93,3 +93,8 @@ type GetProfileResponse struct {
 	Profile *mautrix.RespUserProfile `json:"profile"`
 	Bio     *ProfileBio              `json:"bio,omitempty"`
 }
+
+type LiveKitCredentials struct {
+	URL   string `json:"url"`
+	Token string `json:"token"`
+}
