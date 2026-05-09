@@ -56,3 +56,8 @@ type RecoveryKeyResponse struct {
 	RecoveryKey    string                   `json:"recovery_key"`
 	PassphraseMeta *ssss.PassphraseMetadata `json:"passphrase_meta,omitempty"`
 }
+
+type LiveKitCredentials struct {
+	URL   string `json:"url"`
+	Token string `json:"token"`
+}

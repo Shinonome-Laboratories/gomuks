@@ -327,3 +327,9 @@ type RerequestSessionParams struct {
 	SessionID id.SessionID `json:"session_id"`
 	Sender    id.UserID    `json:"sender"`
 }
+
+type GetLiveKitCredentialsParams struct {
+	SFUURL   string    `json:"sfu_url"`
+	RoomID   id.RoomID `json:"room_id"`
+	DeviceID string    `json:"device_id"`
+}
