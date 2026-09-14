@@ -169,6 +169,12 @@ export const preferences = {
 		allowedContexts: anyContext,
 		defaultValue: true,
 	}),
+	hide_fingerprint: new Preference<boolean>({
+		displayName: "Hide fingerprint",
+		description: "Avoid sending data that's easily fingerprintable",
+		allowedContexts: anyContext,
+		defaultValue: false,
+	}),
 	map_provider: new Preference<MapProvider>({
 		displayName: "Map provider",
 		description: "The map provider to use for location messages.",
@@ -233,6 +239,18 @@ export const preferences = {
 		description: "Should Ctrl+Arrow Up/Down change the message you're replying to?",
 		allowedContexts: anyContext,
 		defaultValue: true,
+	}),
+	room_list_preview: new Preference<boolean>({
+		displayName: "Previews in room list",
+		description: "Should the room list have previews of message contents?",
+		allowedContexts: anyContext,
+		defaultValue: true,
+	}),
+	compact_room_list: new Preference<boolean>({
+		displayName: "Compact room list",
+		description: "Use a compact room list that takes less space and doesn't have message previews",
+		allowedContexts: anyGlobalContext,
+		defaultValue: false,
 	}),
 	pin_favorites: new Preference<boolean>({
 		displayName: "Pin favorites to top",
