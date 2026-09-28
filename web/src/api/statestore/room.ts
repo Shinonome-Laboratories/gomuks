@@ -171,6 +171,7 @@ export class RoomStateStore {
 	readonly typingSub = new Subscribable()
 	readonly stateSubs = new MultiSubscribable()
 	readonly eventSubs = new MultiSubscribable()
+	readonly eventRowIDSubs = new MultiSubscribable<EventRowID>()
 	readonly receiptsByEventID: Map<EventID, MemReceipt[]> = new Map()
 	readonly receiptsByUserID: Map<UserID, MemReceipt> = new Map()
 	readonly receiptSubs = new MultiSubscribable()
@@ -411,7 +412,7 @@ export class RoomStateStore {
 
 	applyPagination(
 		history: RawDBEvent[],
-		related: RawDBEvent[],
+		related: RawDBEvent[] | undefined,
 		allReceipts: Record<EventID, DBReceipt[]>,
 		reset: boolean = false,
 	) {
@@ -421,7 +422,7 @@ export class RoomStateStore {
 			this.applyEvent(evt)
 			return { timeline_rowid: evt.timeline_rowid, event_rowid: evt.rowid }
 		})
-		for (const evt of related) {
+		for (const evt of (related ?? [])) {
 			if (!this.eventsByRowID.has(evt.rowid)) {
 				this.applyEvent(evt)
 			}
@@ -500,6 +501,7 @@ export class RoomStateStore {
 		this.eventsByRowID.set(evt.rowid, evt)
 		this.eventsByID.set(evt.event_id, evt)
 		this.eventSubs.notify(evt.event_id)
+		this.eventRowIDSubs.notify(evt.rowid)
 		if (isInThread(evt, this.#threadListenerRoot)) {
 			this.#threadListener?.(undefined, evt)
 		}

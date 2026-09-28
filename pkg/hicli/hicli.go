@@ -50,6 +50,8 @@ type HiClient struct {
 	Initialized       *exsync.Event
 	VerificationState jsoncmd.VerificationState
 
+	InitialDeviceDisplayName string
+
 	KeyBackupVersion id.KeyBackupVersion
 	KeyBackupKey     *backup.MegolmBackupKey
 
@@ -156,6 +158,8 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 		DB:  db,
 		Log: log,
 
+		InitialDeviceDisplayName: DefaultInitialDeviceDisplayName,
+
 		eventDecryptionWaiters: exsync.NewMap[id.EventID, chan struct{}](),
 		requestQueueWakeup:     make(chan struct{}, 1),
 		jsonRequests:           make(map[int64]context.CancelCauseFunc),
@@ -218,6 +222,7 @@ func New(rawDB, cryptoDB *dbutil.Database, log zerolog.Logger, pickleKey []byte,
 func (h *HiClient) saveOAuthTokens(ctx context.Context, refreshToken, accessToken string, expiry time.Time) error {
 	acc := h.Account
 	if acc == nil {
+		zerolog.Ctx(ctx).Warn().Msg("No account, not saving oauth tokens")
 		return nil
 	}
 	acc.RefreshToken = refreshToken

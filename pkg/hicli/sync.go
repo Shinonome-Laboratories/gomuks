@@ -657,6 +657,9 @@ func (h *HiClient) generatePreviewText(content *event.MessageEventContent) strin
 	if strings.Contains(content.FormattedBody, "data-mx-spoiler") {
 		text = "<message contains spoilers>"
 	}
+	if content.MsgType.IsText() && text == "" {
+		text = "<empty message>"
+	}
 	if content.MsgType.IsMedia() && (text == "" || content.FileName == "" || content.FileName == content.Body) {
 		switch content.MsgType {
 		case event.MsgImage:
@@ -839,12 +842,31 @@ func (h *HiClient) processEvent(
 	decryptionQueue map[id.SessionID]*database.SessionRequest,
 	checkDB bool,
 ) (*database.Event, error) {
+	latestEdit := evt.Unsigned.Relations.GetLatestEdit()
+	evt.Unsigned.Relations = nil // we don't want to save this to the database
+	processLatestEdit := func(dbEvt *database.Event) error {
+		if latestEdit != nil && (latestEdit.RoomID == "" || latestEdit.RoomID == evt.RoomID) {
+			latestEdit.RoomID = evt.RoomID
+			dbEdit, err := h.processEvent(ctx, latestEdit, llSummary, decryptionQueue, true)
+			if err != nil {
+				return fmt.Errorf("failed to process edit %s of event %s: %w", latestEdit.ID, evt.ID, err)
+			} else if dbEdit != nil {
+				dbEvt.LastEditRef = dbEdit
+				dbEvt.LastEditRowID = &dbEdit.RowID
+				err = h.DB.Event.UpdateLastEdit(ctx, dbEvt, dbEdit)
+				if err != nil {
+					return fmt.Errorf("failed to update last edit for event %s: %w", dbEvt.ID, err)
+				}
+			}
+		}
+		return nil
+	}
 	if checkDB {
 		dbEvt, err := h.DB.Event.GetByID(ctx, evt.RoomID, evt.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check if event %s exists: %w", evt.ID, err)
 		} else if dbEvt != nil {
-			return dbEvt, nil
+			return dbEvt, processLatestEdit(dbEvt)
 		}
 	}
 	if err := h.fillPrevContent(ctx, evt); err != nil {
@@ -882,6 +904,10 @@ func (h *HiClient) processEvent(
 	_, err := h.DB.Event.Upsert(ctx, dbEvt)
 	if err != nil {
 		return dbEvt, fmt.Errorf("failed to save event %s: %w", evt.ID, err)
+	}
+	err = processLatestEdit(dbEvt)
+	if err != nil {
+		return dbEvt, err
 	}
 	if decryptedMautrixEvt != nil {
 		h.cacheMedia(ctx, decryptedMautrixEvt, dbEvt.RowID)
@@ -966,7 +992,7 @@ func (h *HiClient) processStateAndTimeline(
 	}
 	decryptionQueue := make(map[id.SessionID]*database.SessionRequest)
 	allNewEvents := make([]*database.Event, 0, len(state.Events)+len(sticky.Events)+len(timeline.Events))
-	addedEvents := make(map[database.EventRowID]struct{})
+	addedEvents := make(map[database.EventRowID]int)
 	newNotifications := make([]jsoncmd.SyncNotification, 0)
 	var recalculatePreviewEvent, unreadMessagesWereMaybeRedacted bool
 	var newUnreadCounts database.UnreadCounts
@@ -981,9 +1007,12 @@ func (h *HiClient) processStateAndTimeline(
 		} else if dbEvt == nil {
 			return nil, nil
 		}
-		_, alreadyAdded := addedEvents[dbEvt.RowID]
-		if !alreadyAdded {
-			addedEvents[dbEvt.RowID] = struct{}{}
+		existingIdx, alreadyAdded := addedEvents[dbEvt.RowID]
+		if alreadyAdded {
+			// TODO update newNotifications as well?
+			allNewEvents[existingIdx] = dbEvt
+		} else {
+			addedEvents[dbEvt.RowID] = len(allNewEvents)
 			allNewEvents = append(allNewEvents, dbEvt)
 		}
 		return dbEvt, nil
@@ -1059,8 +1088,8 @@ func (h *HiClient) processStateAndTimeline(
 			}
 			processImportantEvent(ctx, evt, room, updatedRoom, dbEvt.RowID, sdc)
 		}
+		addedEvents[dbEvt.RowID] = len(allNewEvents)
 		allNewEvents = append(allNewEvents, dbEvt)
-		addedEvents[dbEvt.RowID] = struct{}{}
 		if evt.Type == event.EventRedaction && evt.Redacts != "" {
 			err = processRedaction(evt)
 			if err != nil {

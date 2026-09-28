@@ -23,6 +23,7 @@ import {
 	EventID,
 	EventRowID,
 	EventType,
+	GetMentionsResponse,
 	GetOwnDevicesResponse,
 	GetProfileResponse,
 	JSONValue,
@@ -61,6 +62,7 @@ import {
 	RespOpenIDToken,
 	RespRTCTransports,
 	RespRoomJoin,
+	RespSendEvent,
 	RespSpaceHierarchy,
 	RespTurnServer,
 	RoomAlias,
@@ -241,7 +243,7 @@ export default abstract class RPCClient {
 		return this.request("report_event", { room_id, event_id, reason })
 	}
 
-	redactEvent(room_id: RoomID, event_id: EventID, reason: string): Promise<void> {
+	redactEvent(room_id: RoomID, event_id: EventID, reason: string): Promise<RespSendEvent> {
 		return this.request("redact_event", { room_id, event_id, reason })
 	}
 
@@ -351,7 +353,7 @@ export default abstract class RPCClient {
 		type: UnreadType = UnreadType.Highlight,
 		limit: number = 50,
 		room_id: RoomID | undefined = undefined,
-	): Promise<RawDBEvent[]> {
+	): Promise<GetMentionsResponse> {
 		return this.request("get_mentions", { max_timestamp, type, limit, room_id })
 	}
 

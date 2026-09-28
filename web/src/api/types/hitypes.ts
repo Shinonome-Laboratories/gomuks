@@ -135,6 +135,7 @@ export interface BaseDBEvent {
 	send_error?: string
 
 	reactions?: Record<string, number>
+	own_reactions?: Record<string, EventID[]>
 	last_edit_rowid?: EventRowID
 	unread_type: UnreadType
 
@@ -186,7 +187,7 @@ export interface MemReceipt extends DBReceipt {
 export interface PaginationResponse {
 	events: RawDBEvent[]
 	receipts: Record<EventID, DBReceipt[]>
-	related_events: RawDBEvent[]
+	related_events?: RawDBEvent[]
 	has_more: boolean
 }
 
@@ -196,6 +197,7 @@ export interface EventContextResponse {
 	before: RawDBEvent[]
 	after: RawDBEvent[]
 	event: RawDBEvent
+	related_events?: RawDBEvent[]
 }
 
 export interface MutualRoomsResponse {
@@ -217,6 +219,12 @@ export interface GetProfileResponse {
 export interface ManualPaginationResponse {
 	events: RawDBEvent[]
 	next_batch?: string
+	related_events?: RawDBEvent[]
+}
+
+export interface GetMentionsResponse {
+	events: RawDBEvent[]
+	related_events?: RawDBEvent[]
 }
 
 export interface ResolveAliasResponse {

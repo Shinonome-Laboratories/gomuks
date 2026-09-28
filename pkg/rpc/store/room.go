@@ -332,7 +332,7 @@ func (rs *RoomStore) applyEvent(evt *database.Event, pending bool) {
 	} else if evt.RelationType == event.RelReplace && evt.RelatesTo != "" {
 		editTarget, ok := rs.eventsByID[evt.RelatesTo]
 		if ok && editTarget.LastEditRowID != nil && *editTarget.LastEditRowID != 0 && *editTarget.LastEditRowID == evt.RowID {
-			editTarget.LastEditRef = editTarget
+			editTarget.LastEditRef = evt
 			rs.EventSubs.Notify(editTarget.ID)
 		}
 	}
@@ -505,8 +505,7 @@ func (rs *RoomStore) GetMarkAsReadParams() *jsoncmd.MarkReadParams {
 		return nil
 	}
 	var readEvt *database.Event
-	for i := len(rs.timeline) - 1; i >= 0; i-- {
-		tuple := rs.timeline[i]
+	for _, tuple := range slices.Backward(rs.timeline) {
 		if tuple.Event == rs.lastMarkedRead {
 			break
 		}
